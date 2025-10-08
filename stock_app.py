@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 
 # ----------------------------------------------------------------
-# ユーティリティ関数
+# ユーティリティ関数（変更なし）
 # ----------------------------------------------------------------
 def format_market_cap(market_cap):
     """
@@ -28,15 +28,11 @@ def format_market_cap(market_cap):
         return f"{market_cap:,.0f}円"
 
 # ----------------------------------------------------------------
-# Streamlit アプリケーション
+# Streamlit アプリケーション（表示方法を大幅にシンプル化）
 # ----------------------------------------------------------------
 
-# ページの基本設定 (最初に呼び出す)
-st.set_page_config(
-    page_title="横浜FG 株価情報",
-    page_icon="🏦",
-    layout="centered" # スマホ表示に適したレイアウト
-)
+# ページの基本設定
+st.set_page_config(page_title="横浜FG 株価情報", layout="centered")
 
 st.title("🏦 横浜フィナンシャルグループ 株価情報")
 
@@ -44,53 +40,50 @@ st.title("🏦 横浜フィナンシャルグループ 株価情報")
 ticker_symbol = "7186.T"
 
 try:
-    with st.spinner('最新の株価データを取得中です...'):
-        # yfinance Tickerオブジェクトを作成
+    with st.spinner('株価データを取得中です...'):
         ticker = yf.Ticker(ticker_symbol)
-        
-        # 企業情報を一括で取得
         info = ticker.info
 
-    # info辞書が空、または主要なキーがない場合はエラーとする
     if not info or 'longName' not in info:
-        st.error("株価データを取得できませんでした。証券コードが正しいか、または一時的な問題が発生している可能性があります。")
+        st.error("株価データを取得できませんでした。時間をおいて再読み込みしてください。")
     else:
-        # --- メイン情報の表示 ---
-        st.header(f"{info.get('longName', ticker_symbol)}")
+        # --- ここから表示方法を最もシンプルな形式に変更 ---
 
-        # st.columns を使ってPCとスマホの表示を最適化
-        col1, col2 = st.columns(2)
+        st.header(info.get('longName', ticker_symbol))
+        st.markdown("---")
 
-        with col1:
-            current_price = info.get('currentPrice')
-            previous_close = info.get('previousClose')
-            
-            if current_price and previous_close:
-                delta = current_price - previous_close
-                st.metric(
-                    label="現在の株価", 
-                    value=f"{current_price:,.2f} 円", 
-                    delta=f"{delta:,.2f} 円"
-                )
-            else:
-                st.metric(label="現在の株価", value="取得不可")
-
-        with col2:
-            market_cap = info.get('marketCap')
-            st.metric(label="時価総額", value=format_market_cap(market_cap))
+        # 1. 現在の株価
+        st.subheader("現在の株価")
+        current_price = info.get('currentPrice')
+        previous_close = info.get('previousClose')
         
-        st.divider() # 水平線
+        if current_price and previous_close:
+            price_text = f"## {current_price:,.2f} 円"
+            st.markdown(price_text)
+            
+            delta = current_price - previous_close
+            delta_text = f"前日比: {delta:,.2f} 円"
+            st.write(delta_text)
+        else:
+            st.write("取得不可")
 
-        # --- 詳細情報の表示 (折りたたみ) ---
-        with st.expander("企業概要を見る"):
-            st.markdown(f"""
-            - **業種**: {info.get('industry', 'N/A')}
-            - **ウェブサイト**: {info.get('website', 'N/A')}
-            """)
-            st.write(info.get('longBusinessSummary', '事業概要のデータがありません。'))
+        # 2. 時価総額
+        st.subheader("時価総額")
+        market_cap = info.get('marketCap')
+        cap_text = f"## {format_market_cap(market_cap)}"
+        st.markdown(cap_text)
+        
+        st.markdown("---")
+
+        # 3. 企業概要
+        st.subheader("企業概要")
+        st.write(f"**業種**: {info.get('industry', 'N/A')}")
+        st.write(f"**ウェブサイト**: {info.get('website', 'N/A')}")
+        st.write(info.get('longBusinessSummary', '事業概要のデータがありません。'))
         
         st.caption("データ取得元: Yahoo Finance")
 
 except Exception as e:
-    st.error(f"予期せぬエラーが発生しました。ページを再読み込みしてください。")
-    st.error(f"エラー詳細: {e}")
+    st.error("エラーが発生しました。アプリの管理者に連絡してください。")
+    # st.error(f"エラー詳細: {e}") # ユーザーには詳細を見せない方が親切な場合も
+
